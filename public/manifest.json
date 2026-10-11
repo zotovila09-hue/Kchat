@@ -1,0 +1,19 @@
+{
+  "name": "KNX Messenger",
+  "short_name": "KNX",
+  "start_url": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "background_color": "#0e1621",
+  "theme_color": "#17212b",
+  "orientation": "any",
+  "description": "Secure, monolithic, private messenger with real-time end-to-end synchronization",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

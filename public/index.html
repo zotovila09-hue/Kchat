@@ -1,0 +1,2238 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+    <title>KNX Messenger</title>
+    <meta name="application-name" content="KNX Messenger">
+    <meta name="apple-mobile-web-app-title" content="KNX Messenger">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+    <meta name="theme-color" content="#141519">
+    <meta name="color-scheme" content="dark light">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="apple-touch-icon" href="favicon.svg">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-theme="light">
+
+    <!-- Monolithic Connection & Sync Bar -->
+    <div id="knx-connection-pill" class="knx-conn-pill hidden">
+        <div class="knx-conn-spinner"></div>
+        <span id="knx-conn-status-text">Соединение с сервером...</span>
+        <button id="knx-conn-retry-btn" class="knx-conn-retry-btn" onclick="forceKnxReconnect()">Повторить</button>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <div id="image-viewer" class="image-viewer hidden" onclick="closeImageViewer()">
+        <button class="viewer-close-btn" onclick="closeImageViewer()">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" stroke="#ffffff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0px 0px 4px rgba(0,0,0,0.6));">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+        <img id="image-viewer-img" src="" alt="Full photo" onclick="event.stopPropagation()">
+    </div>
+
+    <div id="chat-context-menu" class="context-menu hidden">
+        <div class="menu-item" onclick="pinChat()">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.5c0-1.5-2-3.5-2-3.5v-7c0-1.1-.9-2-2-2H9c-1.1 0-2 .9-2 2v7c0 0-2 2-2 3.5V17z"></path></svg> Закрепить / Открепить
+        </div>
+        <div class="menu-item" onclick="muteChat()">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path><path d="M18 8a6 6 0 0 0-9.33-5"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg> Вкл / Выкл уведомления
+        </div>
+        <div class="menu-item danger" onclick="confirmDeleteChat()">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg> Удалить чат
+        </div>
+    </div>
+
+    <div id="msg-context-menu" class="context-menu hidden">
+        <div class="reactions-bar" id="reactions-bar">
+            <!-- Upward smooth expanding emoji drawer -->
+            <div class="reactions-drawer" id="reactions-drawer">
+                <div class="reactions-grid">
+                    <span onclick="sendReaction('😮')">😮</span>
+                    <span onclick="sendReaction('😢')">😢</span>
+                    <span onclick="sendReaction('🙏')">🙏</span>
+                    <span onclick="sendReaction('🎉')">🎉</span>
+                    <span onclick="sendReaction('👏')">👏</span>
+                    <span onclick="sendReaction('💯')">💯</span>
+                    <span onclick="sendReaction('😍')">😍</span>
+                    <span onclick="sendReaction('🤔')">🤔</span>
+                    <span onclick="sendReaction('👀')">👀</span>
+                    <span onclick="sendReaction('⚡')">⚡</span>
+                    <span onclick="sendReaction('✨')">✨</span>
+                    <span onclick="sendReaction('😎')">😎</span>
+                    <span onclick="sendReaction('🥰')">🥰</span>
+                    <span onclick="sendReaction('🤝')">🤝</span>
+                    <span onclick="sendReaction('🥳')">🥳</span>
+                </div>
+            </div>
+            <!-- Primary compact reaction bar with upward arrow -->
+            <div class="reactions-primary-row">
+                <div class="reactions-primary">
+                    <span onclick="sendReaction('👍')">👍</span>
+                    <span onclick="sendReaction('❤️')">❤️</span>
+                    <span onclick="sendReaction('🔥')">🔥</span>
+                    <span onclick="sendReaction('😂')">😂</span>
+                </div>
+                <button type="button" class="reactions-expand-btn" id="reactions-expand-btn" onclick="toggleReactionsExpand(event)" title="Ещё реакции">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="18 15 12 9 6 15"></polyline>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="menu-item" onclick="prepareReply()">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg> Ответить
+        </div>
+        <div class="menu-item" onclick="prepareSelectMode()">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg> Выбрать
+        </div>
+        <div class="menu-item" onclick="copyTargetMessage()">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Копировать текст
+        </div>
+        <div class="menu-item" id="msg-pin-btn" onclick="togglePinMessage()">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-1.5c0-1.5-2-3.5-2-3.5v-7c0-1.1-.9-2-2-2H9c-1.1 0-2 .9-2 2v7c0 0-2 2-2 3.5V17z"></path></svg> Закрепить
+        </div>
+        <div class="menu-item" id="msg-edit-btn" onclick="prepareEdit()">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Редактировать
+        </div>
+        <div class="menu-item danger" id="msg-delete-btn" onclick="deleteTargetMessage()">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg> Удалить
+        </div>
+    </div>
+
+    <!-- Invite / Gatekeeper Screen -->
+    <div id="invite-screen" class="screen animate-fade-in hidden">
+        <div class="auth-box invite-box">
+            <div class="invite-header-badge">
+                <span class="invite-badge-dot"></span>
+                <span>Закрытый бета-тест Приглашение</span>
+            </div>
+
+            <div class="invite-logo-wrap">
+                <div class="invite-shield-icon">
+                    <svg viewBox="0 0 24 24" width="34" height="34" stroke="var(--accent)" stroke-width="2" fill="none">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                </div>
+                <h2 style="margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.02em;">KNX Messenger</h2>
+                <p class="invite-subtitle">Вход доступен только по приглашению</p>
+            </div>
+
+            <div class="invite-desc-card">
+                Сейчас мессенджер работает в режиме приватного тестирования. Введите код приглашения или перейдите по инвайт-ссылке для активации устройства.
+            </div>
+
+            <div id="invite-form">
+                <div class="invite-input-container">
+                    <input type="text" id="invite-code-input" placeholder="Код или ссылка приглашения..." autocomplete="off" spellcheck="false" onkeydown="if(event.key==='Enter')activateInvite()">
+                    <button type="button" class="invite-paste-btn" onclick="pasteInviteFromClipboard()" title="Вставить из буфера обмена">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    </button>
+                </div>
+                <button class="btn-primary invite-submit-btn" id="invite-submit-btn" onclick="activateInvite()">
+                    <span>Активировать доступ</span>
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </button>
+            </div>
+
+            <div id="invite-status-msg" class="invite-status-box hidden"></div>
+
+            <div class="invite-footer-hint">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                <span>После первой активации на этом устройстве повторный ввод не потребуется.</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="auth-screen" class="screen animate-fade-in">
+        <div class="auth-box">
+            <h2>Kchat</h2>
+
+            <!-- Auth Switcher Tabs -->
+            <div style="display: flex; background: var(--bg-input); padding: 3px; border-radius: 12px; margin-bottom: 20px; gap: 4px;">
+                <button id="auth-tab-pass" class="qr-tab-btn active" onclick="switchAuthTab('password')">Пароль / K-ID</button>
+                <button id="auth-tab-qr" class="qr-tab-btn" onclick="switchAuthTab('qr')">Вход по QR</button>
+            </div>
+
+            <div id="login-form">
+                <input type="text" id="login-kid" placeholder="Ваш K-ID" data-i18n="phKId">
+                <input type="password" id="login-pass" placeholder="Пароль" data-i18n="phPass">
+                <button class="btn-primary" data-i18n="btnLogin" onclick="login()">Войти</button>
+                <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+                    <p class="toggle-link" style="margin-top: 0;" data-i18n="forgotKid" onclick="openForgotKidModal()">Забыли K-ID?</p>
+                    <p class="toggle-link" style="margin-top: 0;" data-i18n="goReg" onclick="toggleAuth()">Регистрация</p>
+                </div>
+            </div>
+
+            <div id="qr-login-box" class="hidden" style="text-align: center; padding: 5px 0 10px 0;">
+                <div id="login-qr-wrapper" style="position: relative; width: 196px; height: 196px; margin: 0 auto 14px auto; background: white; padding: 8px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: center; overflow: hidden;">
+                    <div id="login-qr-container" style="width: 180px; height: 180px; display: flex; align-items: center; justify-content: center;">
+                        <img id="login-qr-img" src="" alt="QR Login" style="width: 180px; height: 180px; border-radius: 8px; display: none;">
+                    </div>
+                    <div id="login-qr-overlay" class="hidden" style="position: absolute; inset: 0; background: rgba(255,255,255,0.94); border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px; z-index: 5;">
+                        <div style="font-size: 13px; font-weight: 600; color: var(--text-main); margin-bottom: 8px;">Время QR-кода истекло</div>
+                        <button class="btn-primary" style="padding: 7px 16px; font-size: 13px; border-radius: 10px;" onclick="refreshLoginQR()">Обновить QR</button>
+                    </div>
+                </div>
+                <div style="font-size: 15px; font-weight: 600; margin-bottom: 4px;">Вход по QR-коду</div>
+                <div id="login-qr-timer" style="font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                    <span class="qr-pulse-dot"></span> Действителен: <span id="qr-time-left">02:00</span>
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted); line-height: 1.4; padding: 0 10px; margin-bottom: 14px;">
+                    1. Откройте KNX на основном телефоне<br>
+                    2. Перейдите в <b>Настройки → Устройства</b><br>
+                    3. Нажмите <b>«Подключить по QR»</b> и наведите камеру
+                </div>
+                <div style="display: flex; gap: 8px; justify-content: center;">
+                    </button>
+                    <button class="btn-secondary" style="border-radius: 10px; padding: 8px 14px; font-size: 12px; font-weight: 500;" onclick="refreshLoginQR()">
+                        🔄 Обновить QR
+                    </button>
+                </div>
+            </div>
+
+            <div id="reg-form" class="hidden">
+                <input type="text" id="reg-name" placeholder="Имя" data-i18n="phName">
+                <input type="email" id="reg-email" placeholder="E-mail">
+                <input type="password" id="reg-pass" placeholder="Пароль" data-i18n="phPass">
+                <button class="btn-primary" data-i18n="btnReg" onclick="register()">Создать аккаунт</button>
+                <p class="toggle-link" data-i18n="goLogin" onclick="toggleAuth()">Уже есть аккаунт? Войти</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="forgot-kid-modal" class="modal hidden">
+        <div class="modal-content scale-in" style="width: 350px; text-align: center;">
+            <div class="modal-header">
+                <h2>Восстановление K-ID</h2>
+                <button class="icon-btn close-btn" onclick="closeModal('forgot-kid-modal')">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Введите вашу почту.</p>
+            <input type="email" id="forgot-email-input" placeholder="Ваша почта">
+            <button class="btn-primary mt-3" onclick="recoverKid()">Найти K-ID</button>
+        </div>
+    </div>
+
+    <div id="attachment-modal" class="modal hidden">
+        <div class="modal-content scale-in" style="width: 400px; text-align: center;">
+            <div class="modal-header">
+                <h2 data-i18n="sendFile">Отправка файла</h2>
+                <button class="icon-btn close-btn" onclick="closeAttachmentModal()">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <div id="attachment-preview-box" style="margin-bottom: 15px; max-height: 250px; overflow: hidden; border-radius: 8px; background: var(--bg-main); display: flex; align-items: center; justify-content: center;"></div>
+            <div id="attachment-filename" style="font-weight: bold; margin-bottom: 15px; font-size: 14px; word-break: break-word;"></div>
+            <input type="text" id="attachment-caption" placeholder="Добавить подпись..." data-i18n="phCaption">
+            <button class="btn-primary mt-3" onclick="confirmSendAttachment()" data-i18n="btnSend">Отправить</button>
+        </div>
+    </div>
+
+    <div id="folder-modal" class="modal hidden">
+        <div class="modal-content scale-in" style="width: 400px;">
+            <div class="modal-header">
+                <h2>Создать папку</h2>
+                <button class="icon-btn close-btn" onclick="closeModal('folder-modal')">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <input type="text" id="folder-name-input" placeholder="Название папки (например: Работа)">
+            <p style="font-size: 13px; color: var(--text-muted); margin: 10px 0;">Выберите чаты:</p>
+            <div id="folder-chats-selection" style="max-height: 200px; overflow-y: auto; background: var(--bg-input); border-radius: 8px; padding: 10px;"></div>
+            <button class="btn-primary mt-3" onclick="saveNewFolder()">Сохранить папку</button>
+        </div>
+    </div>
+
+    <div id="confirm-delete-modal" class="modal hidden">
+        <div class="modal-content scale-in" style="width: 320px; text-align: center;">
+            <h3 style="margin-bottom: 15px;">Удалить чат?</h3>
+            <div style="display: flex; gap: 10px;"><button class="btn-secondary" onclick="closeModal('confirm-delete-modal')">Отмена</button><button class="btn-danger" onclick="executeDeleteChat()">Удалить</button></div>
+        </div>
+    </div>
+
+    <div id="confirm-block-modal" class="modal hidden">
+        <div class="modal-content scale-in" style="width: 320px; text-align: center;">
+            <h3 style="margin-bottom: 15px;">Заблокировать?</h3>
+            <div style="display: flex; gap: 10px;"><button class="btn-secondary" onclick="closeModal('confirm-block-modal')">Отмена</button><button class="btn-danger" onclick="executeBlockUser()">Блок</button></div>
+        </div>
+    </div>
+
+    <div id="onboarding-screen" class="screen hidden">
+        <div class="card scale-in">
+            <h3 id="ob-title">Преимущество</h3>
+            <p id="ob-text">Текст</p>
+            <div class="card-buttons"><button onclick="skipOnboarding()" class="btn-secondary">Пропустить</button><button onclick="nextCard()" class="btn-primary">Далее</button></div>
+        </div>
+    </div>
+
+    <div id="main-screen" class="screen hidden animate-fade-in">
+        <div class="sidebar" id="sidebar">
+            <div class="profile-header" onclick="openProfileScreen(currentUser.kId)">
+                <div class="sidebar-profile-bg" id="sidebar-profile-bg"></div>
+                <div class="sidebar-profile-overlay"></div>
+                <div class="sidebar-profile-content">
+                    <img class="avatar-img" id="my-avatar" src="" alt="Мое фото">
+                    <div class="info">
+                        <div id="my-name" class="name">Имя</div>
+                        <div id="my-kid" class="kid">k-id</div>
+                    </div>
+                    <button id="sidebar-lock-btn" class="icon-btn lock-app-btn hidden" onclick="event.stopPropagation(); lockAppNow()" title="Заблокировать" style="margin-right: 4px;">
+                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                    </button>
+                    <button class="icon-btn" onclick="event.stopPropagation(); openSettingsScreen()">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="search-bar">
+                <input type="text" id="search-input" data-i18n="search" placeholder="Поиск (K-ID или g-...)" oninput="filterChats()" onkeydown="if(event.key==='Enter') searchAndAddUser(); if(event.key==='Escape'){event.preventDefault(); this.value=''; filterChats(); this.blur();}">
+                <button class="icon-btn" onclick="searchAndAddUser()">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </button>
+                <button class="icon-btn" onclick="openCreateGroupModal()" title="Создать">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                </button>
+            </div>
+            
+            <div class="folder-tabs" id="folder-tabs"></div>
+            <div class="chat-list" id="chat-list"></div>
+        </div>
+
+
+
+        <div class="resizer" id="sidebar-resizer"></div>
+
+        <div class="chat-area" id="chat-area">
+            <div id="chat-header" class="chat-header hidden">
+                <button class="icon-btn mobile-back-btn chat-island-btn chat-island-back" onclick="event.stopPropagation(); closeMobileChat()" title="Назад">
+                    <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                </button>
+                <div class="chat-island-pill" id="chat-header-pill" onclick="openProfileScreen(activeChat?.kId)">
+                    <div class="chat-island-avatar-wrap">
+                        <img class="avatar-img-small chat-island-avatar" id="active-chat-avatar" src="" alt="">
+                        <div id="active-chat-online" class="status-dot hidden"></div>
+                    </div>
+                    <div class="info chat-island-info">
+                        <span id="active-chat-name" class="active-chat-name">Чат</span>
+                        <span id="active-chat-sub" class="kid active-chat-sub"></span>
+                        <span id="typing-indicator" class="typing-text hidden">Печатает...</span>
+                    </div>
+                </div>
+                <button class="icon-btn chat-island-btn chat-island-menu" id="chat-menu-btn" onclick="event.stopPropagation(); toggleChatActionsMenu(event)" title="Опции чата">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="1.5" fill="currentColor"></circle>
+                        <circle cx="12" cy="5" r="1.5" fill="currentColor"></circle>
+                        <circle cx="12" cy="19" r="1.5" fill="currentColor"></circle>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Chat Actions Dropdown Menu -->
+            <div id="chat-actions-dropdown" class="chat-actions-dropdown hidden">
+                <div class="menu-item" onclick="openProfileScreen(activeChat?.kId); closeChatActionsMenu();">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    <span id="chat-actions-profile-label">Информация</span>
+                </div>
+                <div class="menu-item" onclick="toggleMuteActiveChat(); closeChatActionsMenu();">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+                    <span id="chat-actions-mute-label">Без звука</span>
+                </div>
+                <div class="menu-item" onclick="enterSelectMode(); closeChatActionsMenu();">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    <span>Выбрать сообщения</span>
+                </div>
+                <div class="menu-item" onclick="closeMobileChat(); closeChatActionsMenu();">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    <span>Закрыть чат (Esc)</span>
+                </div>
+                <div class="menu-item danger-item" onclick="confirmClearActiveChat(); closeChatActionsMenu();">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    <span>Очистить историю</span>
+                </div>
+            </div>
+            
+            <div id="pinned-bar" class="pinned-bar hidden" onclick="scrollToPinned()">
+                <div style="color: var(--accent); font-weight: bold; font-size: 13px;">Закреплённое сообщение</div>
+                <div id="pinned-bar-text" style="font-size: 13px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
+            </div>
+
+            <div id="messages-container" class="messages-container hidden"></div>
+            
+            <div id="sticker-picker" class="hidden">
+                <div class="sticker-tabs" id="sticker-tabs"></div>
+                <div class="sticker-grid" id="sticker-grid"></div>
+            </div>
+
+            <div id="channel-readonly" class="hidden" style="padding: 15px; text-align: center; color: var(--text-muted); background: var(--bg-panel); border-top: 1px solid var(--border); font-size: 14px; z-index: 10;"></div>
+
+                        <div id="input-area" class="input-area hidden">
+                <div class="telegram-input-container">
+                    <!-- Pill Capsule (contains reply preview + input row) -->
+                    <div class="telegram-input-pill" id="telegram-input-pill">
+                        <!-- Integrated Reply Preview -->
+                        <div id="reply-preview" class="telegram-reply-bar hidden">
+                            <div class="telegram-reply-icon">
+                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="#2AABEE" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 14 4 9 9 4"></polyline>
+                                    <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
+                                </svg>
+                            </div>
+                            <div class="telegram-reply-info" onclick="scrollToRepliedMsg()">
+                                <div class="telegram-reply-title" id="reply-preview-title">В ответ</div>
+                                <div class="telegram-reply-text" id="reply-preview-text">Текст сообщения...</div>
+                            </div>
+                            <button class="icon-btn telegram-reply-close" onclick="cancelReply()">
+                                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Voice Recording UI -->
+                        <div id="recording-ui" class="hidden telegram-recording-bar">
+                            <div style="display:flex; align-items:center; color: var(--danger); font-weight: bold; gap: 8px;">
+                                <div class="status-dot" style="animation: pulse 1s infinite; background: var(--danger); border: none;"></div>
+                                <span id="recording-time">0:00</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap: 8px;">
+                                <button class="icon-btn" onclick="cancelAudioRecord()" style="color: var(--text-muted); font-size: 13px;" title="Отмена">
+                                    Отмена
+                                </button>
+                                <button class="icon-btn" onclick="sendAudioRecord()" style="color: var(--accent); background: rgba(42, 171, 238, 0.15); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;" title="Отправить запись">
+                                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Input Row inside Pill -->
+                        <div class="telegram-input-row" id="standard-input-ui">
+                            <button class="icon-btn telegram-pill-btn" onclick="toggleStickerPicker()" title="Стикеры и эмодзи">
+                                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                                    <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                                    <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                                </svg>
+                            </button>
+
+                            <textarea id="message-input" placeholder="Сообщение" rows="1" oninput="handleTyping()" onkeydown="handleKeyPress(event)"></textarea>
+
+                            <button class="icon-btn telegram-pill-btn" onclick="document.getElementById('general-file-input').click()" title="Прикрепить файл">
+                                <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                                </svg>
+                            </button>
+                            <input type="file" id="general-file-input" class="hidden" onchange="handleFileSelect(this)">
+                        </div>
+                    </div>
+
+                    <!-- Outside Circular Action Button -->
+                    <div class="telegram-action-slot">
+                        <button id="btn-mic" class="telegram-action-btn" onclick="startAudioRecord()" title="Голосовое сообщение">
+                            <svg viewBox="0 0 24 24" width="22" height="22" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                <line x1="12" y1="19" x2="12" y2="23"></line>
+                                <line x1="8" y1="23" x2="16" y2="23"></line>
+                            </svg>
+                        </button>
+
+                        <button id="btn-send" class="telegram-action-btn hidden" style="display: none;" onclick="sendMessage()" title="Отправить">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="#ffffff" style="margin-left: 2px;">
+                                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+                            </svg>
+                        </button>
+
+                        <button id="btn-edit-save" class="telegram-action-btn btn-save hidden" style="display: none;" onclick="saveEditedMessage()" title="Сохранить">
+                            <svg viewBox="0 0 24 24" width="20" height="20" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Floating Scroll Down Button -->
+            <button id="scroll-down-btn" class="scroll-down-btn hidden" onclick="scrollChatToBottom(true)" title="Вниз">
+                <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+                <span id="scroll-down-badge" class="scroll-down-badge hidden">0</span>
+            </button>
+
+            <!-- Messages Multi-Select Bottom Bar -->
+            <div id="messages-selection-bar" class="messages-selection-bar hidden">
+                <div class="selection-bar-left">
+                    <button class="icon-btn selection-close-btn" onclick="exitSelectMode()" title="Отмена">
+                        <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                    <span id="selected-messages-count" class="selected-count-label">Выбрано: 0</span>
+                </div>
+                <div class="selection-bar-actions">
+                    <button class="selection-btn" onclick="forwardSelectedMessages()" title="Переслать">
+                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 14 20 9 15 4"></polyline>
+                            <path d="M4 20v-7a4 4 0 0 1 4-4h12"></path>
+                        </svg>
+                        <span>Переслать</span>
+                    </button>
+                    <button class="selection-btn" onclick="copySelectedMessages()" title="Скопировать">
+                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        <span>Копировать</span>
+                    </button>
+                    <button class="selection-btn danger" onclick="deleteSelectedMessages()" title="Удалить">
+                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                        <span>Удалить</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="desktop-no-chat" class="desktop-no-chat">
+                <div class="desktop-no-chat-card">
+                    <div class="desktop-no-chat-logo">
+                        <svg viewBox="0 0 48 48" width="68" height="68" fill="none">
+                            <rect width="48" height="48" rx="24" fill="var(--accent)" fill-opacity="0.14"/>
+                            <path d="M14 24C14 18.477 18.477 14 24 14C29.523 14 34 18.477 34 24C34 29.523 29.523 34 24 34C22.1 34 20.32 33.47 18.8 32.55L14 34L15.45 29.2C14.53 27.68 14 25.9 14 24Z" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <circle cx="20" cy="24" r="1.5" fill="var(--accent)"/>
+                            <circle cx="24" cy="24" r="1.5" fill="var(--accent)"/>
+                            <circle cx="28" cy="24" r="1.5" fill="var(--accent)"/>
+                        </svg>
+                    </div>
+                    <div class="desktop-no-chat-badge">KNX Messenger</div>
+                    <div class="desktop-no-chat-title" data-i18n="selectChat">Выберите чат для начала общения</div>
+                    <div class="desktop-no-chat-sub">Отправьте сообщение собеседнику или создайте группу</div>
+                </div>
+            </div>
+            <div id="no-chat-selected" class="hidden" style="display:none;"></div>
+
+            <!-- Desktop Drag & Drop Upload Overlay -->
+            <div id="chat-drag-overlay" class="chat-drag-overlay hidden">
+                <div class="chat-drag-box">
+                    <svg viewBox="0 0 24 24" width="48" height="48" stroke="var(--accent)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <div class="chat-drag-title">Перетащите файлы сюда</div>
+                    <div class="chat-drag-sub">для отправки в этот диалог</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="profile-screen" class="screen hidden fullscreen-panel">
+        <div class="fullscreen-header">
+            <button class="icon-btn" onclick="closeProfileScreen()">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            </button>
+            <h2 data-i18n="profile">Профиль</h2>
+        </div>
+        <div class="fullscreen-content">
+            <div class="profile-card">
+                <div class="profile-cover" id="prof-header-bg"></div>
+                <div class="profile-info-block">
+                    <img id="prof-avatar" class="avatar-img-xl" src="">
+                    <h3 id="prof-name" style="margin-top: 10px; word-break: break-word;">Имя</h3>
+                    <div id="prof-id" style="color: var(--accent); font-family: monospace; margin-bottom: 5px;">k-id</div>
+                    <div id="prof-status" style="font-size: 14px; margin-bottom: 15px;"></div>
+                    
+                    <div style="background: var(--bg-main); padding: 15px; border-radius: 8px; margin-bottom: 12px; text-align: left; width: 100%; border: 1px solid var(--border);">
+                        <div style="font-size: 12px; color: var(--text-muted);">О себе / Описание:</div>
+                        <div id="prof-bio" style="font-size: 15px; margin-top: 5px; word-break: break-word;"></div>
+                    </div>
+
+                    <div id="prof-hobbies-box" class="hidden" style="background: var(--bg-main); padding: 15px; border-radius: 8px; margin-bottom: 12px; text-align: left; width: 100%; border: 1px solid var(--border);">
+                        <div style="font-size: 12px; color: var(--text-muted);">Увлечения:</div>
+                        <div id="prof-hobbies" style="font-size: 15px; margin-top: 5px; word-break: break-word;"></div>
+                    </div>
+
+                    <div id="prof-birthdate-box" class="hidden" style="background: var(--bg-main); padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left; width: 100%; border: 1px solid var(--border);">
+                        <div style="font-size: 12px; color: var(--text-muted);">Дата рождения:</div>
+                        <div id="prof-birthdate" style="font-size: 15px; margin-top: 5px; word-break: break-word;"></div>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; justify-content: center; width: 100%; flex-wrap: wrap;">
+                        <button id="prof-chat-btn" class="btn-primary hidden" onclick="startChatFromProfile()">Написать</button>
+                        <button id="prof-join-group-btn" class="btn-primary hidden" onclick="joinGroup()">Присоединиться</button>
+                        <button id="prof-edit-group-btn" class="btn-secondary hidden" onclick="openEditGroupScreen()">Редактировать</button>
+                        <button id="prof-block-btn" class="btn-danger hidden" onclick="confirmBlockUser()">Заблокировать</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-screen" class="screen hidden fullscreen-panel">
+        <!-- Main Settings View (Scrollable list with Profile Hero & Category Cards) -->
+        <div id="settings-main-container" class="fullscreen-content settings-scroll-container">
+            <div id="settings-menu" class="settings-section" style="margin-top: 0px;">
+                <!-- Telegram-Style Hero Profile Banner (Cover with bottom fade gradient, avatar, name, k-id, bio) -->
+                <div class="telegram-profile-hero" id="settings-hero-banner" onclick="switchTab('customization')" title="Нажмите для редактирования профиля">
+                    <div class="telegram-hero-bg" id="settings-hero-bg"></div>
+                    <div class="telegram-hero-overlay"></div>
+                    <button type="button" class="icon-btn" onclick="event.stopPropagation(); closeSettingsScreen();" title="Назад к чатам" style="position: absolute; top: 14px; left: 14px; z-index: 25; width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,0.45); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.22); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.15s ease, background 0.15s ease;">
+                        <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                    </button>
+                    <div class="telegram-hero-content">
+                        <div class="telegram-hero-avatar-wrap">
+                            <img id="settings-my-avatar" class="telegram-hero-avatar" src="" alt="Avatar">
+                            <div class="telegram-hero-edit-badge" onclick="event.stopPropagation(); document.getElementById('set-avatar-file')?.click();" title="Изменить аватар">
+                                <svg viewBox="0 0 24 24" width="13" height="13" stroke="#ffffff" stroke-width="2.5" fill="none"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                            </div>
+                        </div>
+                        <div class="telegram-hero-details">
+                            <div class="telegram-hero-name" id="settings-my-name">Мой профиль</div>
+                            <div class="telegram-hero-kid" id="settings-my-kid">K-ID: ...</div>
+                            <div class="telegram-hero-bio" id="settings-my-bio">Нажмите, чтобы настроить профиль</div>
+                        </div>
+                        <button type="button" class="telegram-hero-change-bg-btn" onclick="event.stopPropagation(); document.getElementById('set-header-file')?.click();" title="Сменить фото фона" style="background: rgba(0,0,0,0.38); border: 1px solid rgba(255,255,255,0.22); border-radius: 8px; color: #fff; padding: 6px 10px; font-size: 11.5px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px; backdrop-filter: blur(8px); margin-left: auto; flex-shrink: 0;">
+                            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                            <span>Фон</span>
+                        </button>
+                        <div class="telegram-hero-chevron">›</div>
+                    </div>
+                </div>
+
+                <!-- Group: ОСНОВНОЕ (Точно как на Скриншоте 4) -->
+                <div class="ios-settings-group">
+                    <div class="ios-group-title">ОСНОВНОЕ</div>
+                    <div class="ios-group-card">
+                        <!-- 1. Аккаунт -->
+                        <div class="ios-row clickable" onclick="switchTab('customization')">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box">
+                                    <svg viewBox="0 0 24 24" width="19" height="19" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="12" cy="7" r="4"></circle>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title" data-i18n="account">Аккаунт</div>
+                                    <div class="ios-row-subtitle" data-i18n="accountSub">Имя, ник и «О себе»</div>
+                                </div>
+                            </div>
+                            <div class="ios-chevron">›</div>
+                        </div>
+
+                        <!-- 2. Настройки чатов -->
+                        <div class="ios-row clickable" onclick="switchTab('chat-settings')">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box">
+                                    <svg viewBox="0 0 24 24" width="19" height="19" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title" data-i18n="chatSettings">Настройки чатов</div>
+                                    <div class="ios-row-subtitle" data-i18n="chatSettingsSub">Шрифт, размер и жесты</div>
+                                </div>
+                            </div>
+                            <div class="ios-chevron">›</div>
+                        </div>
+
+                        <!-- 3. Оформление -->
+                        <div class="ios-row clickable" onclick="switchTab('appearance')">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box">
+                                    <svg viewBox="0 0 24 24" width="19" height="19" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.563-2.512 5.563-5.563C21.998 6.45 17.5 2 12 2z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title" data-i18n="appearance">Оформление</div>
+                                    <div class="ios-row-subtitle" data-i18n="appearanceSub">Тема, палитра и обои</div>
+                                </div>
+                            </div>
+                            <div class="ios-chevron">›</div>
+                        </div>
+
+                        <!-- 4. Конфиденциальность -->
+                        <div class="ios-row clickable" onclick="switchTab('privacy')">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box">
+                                    <svg viewBox="0 0 24 24" width="19" height="19" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title" data-i18n="privacy">Конфиденциальность</div>
+                                    <div class="ios-row-subtitle" data-i18n="privacySub">Статус в сети и видимость</div>
+                                </div>
+                            </div>
+                            <div class="ios-chevron">›</div>
+                        </div>
+
+                        <!-- 5. Уведомления и звуки -->
+                        <div class="ios-row clickable" onclick="switchTab('notifications')">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box">
+                                    <svg viewBox="0 0 24 24" width="19" height="19" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title" data-i18n="notifications">Уведомления и звуки</div>
+                                    <div class="ios-row-subtitle" data-i18n="notificationsSub">Вибрация, мелодии и отклик</div>
+                                </div>
+                            </div>
+                            <div class="ios-chevron">›</div>
+                        </div>
+
+                        <!-- 6. Данные и память -->
+                        <div class="ios-row clickable" onclick="switchTab('storage')">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box">
+                                    <svg viewBox="0 0 24 24" width="19" height="19" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <path d="M12 2a10 10 0 0 1 10 10H12V2z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title" data-i18n="storage">Данные и память</div>
+                                    <div class="ios-row-subtitle" data-i18n="storageSub">Кэш медиа и место на устройстве</div>
+                                </div>
+                            </div>
+                            <div class="ios-chevron">›</div>
+                        </div>
+
+                        <!-- 7. Устройства и безопасность -->
+                        <div class="ios-row clickable" onclick="switchTab('security')">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box">
+                                    <svg viewBox="0 0 24 24" width="19" height="19" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                                        <line x1="8" y1="21" x2="16" y2="21"></line>
+                                        <line x1="12" y1="17" x2="12" y2="21"></line>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title" data-i18n="devices">Устройства и безопасность</div>
+                                    <div class="ios-row-subtitle" data-i18n="devicesSub">Сессии, вход и защита аккаунта</div>
+                                </div>
+                            </div>
+                            <div class="ios-chevron">›</div>
+                        </div>
+
+                        <!-- 8. Папки с чатами -->
+                        <div class="ios-row clickable" onclick="switchTab('folders')">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box">
+                                    <svg viewBox="0 0 24 24" width="19" height="19" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title" data-i18n="folders">Папки с чатами</div>
+                                    <div class="ios-row-subtitle" data-i18n="foldersSub">Группировка и сортировка диалогов</div>
+                                </div>
+                            </div>
+                            <div class="ios-chevron">›</div>
+                        </div>
+
+                        <!-- 9. Чёрный список -->
+                        <div class="ios-row clickable" onclick="switchTab('blocked')">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box" style="background: rgba(255, 59, 48, 0.15); color: #ff3b30;">
+                                    <svg viewBox="0 0 24 24" width="19" height="19" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title" data-i18n="blocked">Чёрный список</div>
+                                    <div class="ios-row-subtitle" id="settings-blocked-count-label">Заблокированные пользователи</div>
+                                </div>
+                            </div>
+                            <div class="ios-chevron">›</div>
+                        </div>
+
+                        <!-- 10. Язык -->
+                        <div class="ios-row clickable" onclick="switchTab('language')">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box">
+                                    <svg viewBox="0 0 24 24" width="19" height="19" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title" data-i18n="language">Язык</div>
+                                    <div class="ios-row-subtitle" id="settings-current-lang-label" data-i18n="languageSub">Русский</div>
+                                </div>
+                            </div>
+                            <div class="ios-chevron">›</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Group: УЧЕТНАЯ ЗАПИСЬ -->
+                <div class="ios-settings-group">
+                    <div class="ios-group-title">УЧЕТНАЯ ЗАПИСЬ</div>
+                    <div class="ios-group-card">
+                        <div class="ios-row clickable" onclick="logout()">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box">
+                                    <svg viewBox="0 0 24 24" width="19" height="19" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                        <polyline points="16 17 21 12 16 7"></polyline>
+                                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title">Выйти из аккаунта</div>
+                                </div>
+                            </div>
+                            <div class="ios-chevron">›</div>
+                        </div>
+
+                        <div class="ios-row clickable" onclick="openDeleteAccountModal()">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box" style="color: var(--danger);">
+                                    <svg viewBox="0 0 24 24" width="19" height="19" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title" style="color: var(--danger); font-weight: 600;">Удалить аккаунт навсегда</div>
+                                </div>
+                            </div>
+                            <div class="ios-chevron" style="color: var(--danger);">›</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sub-settings Native Viewport (Slides smoothly on top, interactive gesture swipe back) -->
+        <div id="settings-sub-viewport" class="settings-sub-viewport hidden">
+            <div id="settings-sub-header" class="fullscreen-header">
+                <button class="icon-btn" onclick="backToSettingsMenu()" title="Назад">
+                    <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                </button>
+                <h2 id="settings-sub-title" style="margin: 0; font-size: 18px; font-weight: 600;">Настройки</h2>
+            </div>
+            <div id="settings-sub-scroll" class="fullscreen-content settings-scroll-container settings-sub-scroll">
+                <div id="tab-customization" class="tab-content hidden">
+                <div class="ios-settings-group">
+                    <div class="ios-group-title">Профиль</div>
+                    <div class="ios-group-card">
+                        <div class="ios-row" style="flex-direction: column; align-items: stretch; padding: 16px;">
+                            <div class="upload-flex" style="display:flex; gap: 15px; margin-bottom: 15px;">
+                                <div class="upload-box text-center" style="flex: 1;">
+                                    <img id="settings-avatar-preview" class="avatar-img-large" src="" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin: 0 auto 8px auto; display: block; border: 2px solid var(--border);"><br>
+                                    <label class="file-upload-btn" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; padding: 6px 12px; border-radius: 8px; background: var(--bg-main); border: 1px solid var(--border); cursor: pointer;">
+                                        Аватар <input type="file" id="set-avatar-file" accept="image/*" class="hidden">
+                                    </label>
+                                </div>
+                                <div class="upload-box text-center" style="flex: 1;">
+                                    <div id="settings-header-preview" class="settings-header-preview" style="height: 70px; border-radius: 12px; background-size: cover; background-position: center; border: 2px solid var(--border); margin-bottom: 8px; background-color: var(--bg-main);"></div>
+                                    <label class="file-upload-btn" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; padding: 6px 12px; border-radius: 8px; background: var(--bg-main); border: 1px solid var(--border); cursor: pointer;">
+                                        Обложка <input type="file" id="set-header-file" accept="image/*" class="hidden">
+                                    </label>
+                                </div>
+                            </div>
+                            <div style="margin-bottom: 12px;">
+                                <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px;">Имя</label>
+                                <input type="text" id="set-name" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-main); color: var(--text-main); font-size: 15px;" placeholder="Ваше имя" oninput="triggerAutoSaveCustomization(400)">
+                            </div>
+                            <div style="margin-bottom: 12px;">
+                                <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px;">О себе (Био)</label>
+                                <textarea id="set-bio" rows="2" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-main); color: var(--text-main); font-size: 14px; resize: none;" placeholder="Краткая информация о себе" oninput="triggerAutoSaveCustomization(400)"></textarea>
+                            </div>
+                            <div style="margin-bottom: 12px;">
+                                <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px;">Увлечения</label>
+                                <input type="text" id="set-hobbies" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-main); color: var(--text-main); font-size: 14px;" placeholder="Например: Музыка, IT, дизайн, спорт" oninput="triggerAutoSaveCustomization(400)">
+                            </div>
+                            <div style="margin-bottom: 12px;">
+                                <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px;">Дата рождения</label>
+                                <input type="date" id="set-birthdate" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-main); color: var(--text-main); font-size: 14px;" onchange="triggerAutoSaveCustomization(100)">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ios-settings-group">
+                    <div class="ios-group-title">БЕЗОПАСНОСТЬ ПАРОЛЯ</div>
+                    <div class="ios-group-card" style="padding: 16px;">
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px;">Текущий пароль</label>
+                            <input type="password" id="set-old-pass" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-main); color: var(--text-main); font-size: 14px;" placeholder="Введите текущий пароль">
+                        </div>
+                        <div style="margin-bottom: 14px;">
+                            <label style="font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px;">Новый пароль</label>
+                            <input type="password" id="set-new-pass" style="width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-main); color: var(--text-main); font-size: 14px;" placeholder="Минимум 8 символов (буквы и цифры)">
+                        </div>
+                        <button type="button" class="btn-primary" style="width: 100%; border-radius: 10px; padding: 10px 16px; font-size: 14px; font-weight: 600;" onclick="savePassword()">Сменить пароль</button>
+                    </div>
+                </div>
+
+                <div style="margin: 20px 0 25px 0; text-align: center;">
+                    <div style="display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--text-muted); background: var(--card-bg); padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border);">
+                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="#34c759" stroke-width="2.5" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        Все изменения сохраняются автоматически
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-chat-settings" class="tab-content hidden">
+                <!-- Swipe Gesture Mockup & Action Selector (Screenshot 2) -->
+                <div class="ios-settings-group">
+                    <div class="ios-group-title">ЖЕСТ СМАХИВАНИЯ В СПИСКЕ ЧАТОВ</div>
+                    <div class="ios-group-card" style="padding: 14px 16px;">
+                        <!-- Animated Mockup -->
+                        <div class="swipe-gesture-preview-card">
+                            <div class="swipe-gesture-preview-mockup">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <div style="width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.2);"></div>
+                                    <div>
+                                        <div class="swipe-mock-line-title"></div>
+                                        <div class="swipe-mock-line-sub" style="margin-top: 4px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="swipe-gesture-preview-action-block" id="swipe-preview-action-block">
+                                <svg id="swipe-preview-action-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+                                <span id="swipe-preview-action-text">Архив</span>
+                            </div>
+                        </div>
+
+                        <!-- Selector Chips -->
+                        <div class="swipe-actions-chip-row">
+                            <button type="button" class="swipe-action-chip" data-action="pin" onclick="selectSwipeAction('pin')">
+                                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><line x1="12" y1="17" x2="12" y2="22"></line><path d="M5 17h14v-2l-2-3V6a2 2 0 0 0-2-2h-6a2 2 0 0 0-2 2v6l-2 3v2z"></path></svg>
+                                <span>Закреп...</span>
+                            </button>
+                            <button type="button" class="swipe-action-chip" data-action="read" onclick="selectSwipeAction('read')">
+                                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                <span>Прочит...</span>
+                            </button>
+                            <button type="button" class="swipe-action-chip active" data-action="archive" onclick="selectSwipeAction('archive')">
+                                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><polyline points="21 8 21 21 3 21 3 8"></polyline><rect x="1" y="3" width="22" height="5"></rect><line x1="10" y1="12" x2="14" y2="12"></line></svg>
+                                <span>Архив</span>
+                            </button>
+                            <button type="button" class="swipe-action-chip" data-action="mute" onclick="selectSwipeAction('mute')">
+                                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M13.73 21a2 2 0 0 1-3.46 0"></path><path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                                <span>Без звука</span>
+                            </button>
+                            <button type="button" class="swipe-action-chip" data-action="delete" onclick="selectSwipeAction('delete')">
+                                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                <span>Удалить</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="ios-explainer-text">Смахивание чата влево применит выбранное действие.</div>
+                </div>
+
+                <!-- Media & Sound -->
+                <div class="ios-settings-group">
+                    <div class="ios-group-title">МЕДИА И ЗВУК В ЧАТАХ</div>
+                    <div class="ios-group-card">
+                        <div class="ios-row">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box">
+                                    <svg viewBox="0 0 24 24" width="19" height="19" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title">Поднести к уху для прослушивания</div>
+                                </div>
+                            </div>
+                            <div class="ios-row-right">
+                                <label class="switch">
+                                    <input type="checkbox" id="toggle-raise-to-listen" checked onchange="toggleRaiseToListen(this.checked)">
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="ios-row">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box">
+                                    <svg viewBox="0 0 24 24" width="19" height="19" stroke="currentColor" stroke-width="2" fill="none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title">Звуки сообщений в чате</div>
+                                </div>
+                            </div>
+                            <div class="ios-row-right">
+                                <label class="switch">
+                                    <input type="checkbox" id="toggle-chat-sounds" onchange="updateChatSounds(this.checked)" checked>
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other: Enter to Send -->
+                <div class="ios-settings-group">
+                    <div class="ios-group-title">ОТПРАВКА СООБЩЕНИЙ</div>
+                    <div class="ios-group-card">
+                        <div class="ios-row">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box">
+                                    <svg viewBox="0 0 24 24" width="19" height="19" stroke="currentColor" stroke-width="2" fill="none"><polyline points="9 10 4 15 9 20"></polyline><path d="M20 4v7a4 4 0 0 1-4 4H4"></path></svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title">Отправка по Enter</div>
+                                </div>
+                            </div>
+                            <div class="ios-row-right">
+                                <label class="switch">
+                                    <input type="checkbox" id="toggle-send-enter" onchange="updateSendByEnter(this.checked)" checked>
+                                    <span class="slider round"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ios-explainer-text">Нажатие Enter отправляет сообщение. Для перехода на новую строку используйте Shift + Enter.</div>
+                </div>
+            </div>
+
+            <!-- TAB: ОФОРМЛЕНИЕ (All visual personalization & smooth circular theme reveal) -->
+            <div id="tab-appearance" class="tab-content hidden">
+                <!-- Live Chat Preview -->
+                <div class="ios-settings-group">
+                    <div class="chat-preview-card" id="chat-preview-container">
+                        <div class="chat-preview-bubble-in">
+                            <div>Привет! Как тебе новое оформление KNX?</div>
+                            <span class="chat-preview-time">18:23</span>
+                        </div>
+                        <div class="chat-preview-bubble-out">
+                            <div class="chat-preview-quote">
+                                <div class="chat-preview-quote-author">KNX</div>
+                                <div>Привет! Как тебе новое оформление KNX?</div>
+                            </div>
+                            <div>Выглядит потрясающе, плавно и чисто!</div>
+                            <span class="chat-preview-time">18:24 <span style="font-size: 10px; margin-left: 2px;">✓✓</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Day/Night mode & Color Theme Presets -->
+                <div class="ios-settings-group">
+                    <div class="ios-group-title">ЦВЕТОВАЯ ТЕМА И РЕЖИМ</div>
+                    <div class="ios-group-card" style="padding: 14px 16px;">
+                        <div class="chat-theme-palette-row" id="chat-theme-palette-row">
+                            <div class="chat-theme-palette-card active" data-preset="blue" onclick="selectChatPalette('blue')">
+                                <div class="chat-theme-palette-bubble" style="background: #007aff;"></div>
+                                <div class="chat-theme-palette-sub-bubble"></div>
+                                <div class="chat-theme-palette-emoji">☀️</div>
+                            </div>
+                            <div class="chat-theme-palette-card" data-preset="green" onclick="selectChatPalette('green')">
+                                <div class="chat-theme-palette-bubble" style="background: #34c759;"></div>
+                                <div class="chat-theme-palette-sub-bubble"></div>
+                                <div class="chat-theme-palette-emoji">🌿</div>
+                            </div>
+                            <div class="chat-theme-palette-card" data-preset="navy" onclick="selectChatPalette('navy')">
+                                <div class="chat-theme-palette-bubble" style="background: #2b5278;"></div>
+                                <div class="chat-theme-palette-sub-bubble"></div>
+                                <div class="chat-theme-palette-emoji">🌌</div>
+                            </div>
+                            <div class="chat-theme-palette-card" data-preset="purple" onclick="selectChatPalette('purple')">
+                                <div class="chat-theme-palette-bubble" style="background: #af52de;"></div>
+                                <div class="chat-theme-palette-sub-bubble"></div>
+                                <div class="chat-theme-palette-emoji">🔮</div>
+                            </div>
+                            <div class="chat-theme-palette-card" data-preset="orange" onclick="selectChatPalette('orange')">
+                                <div class="chat-theme-palette-bubble" style="background: #ff9500;"></div>
+                                <div class="chat-theme-palette-sub-bubble"></div>
+                                <div class="chat-theme-palette-emoji">🌅</div>
+                            </div>
+                        </div>
+
+                        <div style="height: 1px; background: var(--settings-card-border); margin: 12px 0;"></div>
+
+                        <!-- Moon/Sun Theme Toggle Row with expanding circular ripple -->
+                        <div class="ios-row clickable" onclick="triggerThemeCircleTransition(event)" style="padding: 6px 0; margin: 0;">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box" id="theme-toggle-icon-box" style="background: #5856D6;">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="white" stroke-width="2" fill="none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title" id="theme-toggle-label">Ночной режим</div>
+                                    <div class="ios-row-subtitle">Плавное круговое переключение</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div class="theme-moon-slot" id="appearance-moon-slot" style="width: 32px; height: 32px; border-radius: 50%; background: var(--bg-input); display: flex; align-items: center; justify-content: center; color: var(--accent);">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                                </div>
+                                <div class="ios-chevron">›</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Text Size Slider with Extreme Labels -->
+                <div class="ios-settings-group">
+                    <div class="ios-group-title" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>РАЗМЕР ТЕКСТА</span>
+                        <span id="slider-font-val" style="color: var(--accent); font-weight: 600;">16 пт</span>
+                    </div>
+                    <div class="ios-group-card" style="padding: 14px 16px;">
+                        <div class="ios-slider-wrapper">
+                            <input type="range" id="chat-font-size-slider" min="12" max="24" step="1" value="16" class="ios-range-slider" oninput="updateChatFontSize(this.value)">
+                            <div class="ios-slider-extreme-labels">
+                                <span>Мелко</span>
+                                <span>Крупно</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Corner Radius Slider with Extreme Labels -->
+                <div class="ios-settings-group">
+                    <div class="ios-group-title" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>УГЛЫ СООБЩЕНИЙ</span>
+                        <span id="slider-corner-val" style="color: var(--accent); font-weight: 600;">17 px</span>
+                    </div>
+                    <div class="ios-group-card" style="padding: 14px 16px;">
+                        <div class="ios-slider-wrapper">
+                            <input type="range" id="chat-corner-radius-slider" min="0" max="24" step="1" value="17" class="ios-range-slider" oninput="updateBubbleCornerRadius(this.value)">
+                            <div class="ios-slider-extreme-labels">
+                                <span>Остро</span>
+                                <span>Кругло</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Wallpaper -->
+                <input type="file" id="set-chatbg-file" accept="image/*" style="display: none;" onchange="handleChatBgFileSelect(event)">
+                <div class="ios-settings-group">
+                    <div class="ios-group-title" data-i18n="setChatBgTitle">ОБОИ ЧАТОВ</div>
+                    <div class="ios-group-card">
+                        <div class="ios-row clickable" onclick="document.getElementById('set-chatbg-file')?.click()">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box" style="background: #ff9500;">
+                                    <svg viewBox="0 0 24 24" width="19" height="19" stroke="white" stroke-width="2" fill="none">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                        <polyline points="21 15 16 10 5 21"></polyline>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title" data-i18n="chooseWallpaper">Выбрать фото из галереи</div>
+                                    <div class="ios-row-subtitle" data-i18n="chooseWallpaperSub">Любое изображение для фона</div>
+                                </div>
+                            </div>
+                            <div class="ios-chevron">›</div>
+                        </div>
+
+                        <!-- Quick Wallpaper Presets -->
+                        <div style="padding: 12px 14px; border-top: 1px solid var(--settings-card-border); display: flex; gap: 8px; overflow-x: auto;">
+                            <button type="button" class="btn-secondary" style="border-radius: 10px; padding: 6px 12px; font-size: 12px; white-space: nowrap; flex-shrink: 0;" onclick="applyWallpaperPreset('dark-mesh')">🌌 Космос</button>
+                            <button type="button" class="btn-secondary" style="border-radius: 10px; padding: 6px 12px; font-size: 12px; white-space: nowrap; flex-shrink: 0;" onclick="applyWallpaperPreset('neon-gradient')">🌆 Неон</button>
+                            <button type="button" class="btn-secondary" style="border-radius: 10px; padding: 6px 12px; font-size: 12px; white-space: nowrap; flex-shrink: 0;" onclick="applyWallpaperPreset('minimal-dots')">◽ Сетка</button>
+                            <button type="button" class="btn-secondary" style="border-radius: 10px; padding: 6px 12px; font-size: 12px; white-space: nowrap; flex-shrink: 0;" onclick="applyWallpaperPreset('aurora')">✨ Аврора</button>
+                        </div>
+
+                        <div class="ios-row clickable" onclick="clearChatBg()">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box" style="background: rgba(142, 142, 147, 0.2);">
+                                    <svg viewBox="0 0 24 24" width="19" height="19" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title" data-i18n="resetWallpaper">Сбросить обои по умолчанию</div>
+                                </div>
+                            </div>
+                            <div class="ios-chevron">›</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Auto Night Mode -->
+                <div class="ios-settings-group">
+                    <div class="ios-group-card">
+                        <div class="ios-row clickable" onclick="toggleAutoNightMode()">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box">
+                                    <svg viewBox="0 0 24 24" width="19" height="19" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title">Автоматическая ночная тема</div>
+                                    <div class="ios-row-subtitle" id="auto-night-status-label">Выключена</div>
+                                </div>
+                            </div>
+                            <div class="ios-chevron">›</div>
+                        </div>
+                    </div>
+                    <div class="ios-explainer-text">Следовать настройкам темной/светлой темы вашей операционной системы.</div>
+                </div>
+            </div>
+
+            <!-- TAB: УВЕДОМЛЕНИЯ И ЗВУКИ -->
+            <div id="tab-notifications" class="tab-content hidden">
+                <div class="ios-settings-group">
+                    <div class="ios-group-title">СИСТЕМНЫЕ УВЕДОМЛЕНИЯ НА ТЕЛЕФОН</div>
+                    <div class="ios-group-card">
+                        <div class="ios-row">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box" style="background: #5856D6;">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="white" stroke-width="2" fill="none">
+                                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title">Уведомления браузера</div>
+                                    <div class="ios-row-subtitle" id="notif-permission-status">Проверка разрешения...</div>
+                                </div>
+                            </div>
+                            <div class="ios-row-right">
+                                <button type="button" class="btn-primary" id="btn-request-notif-perm" onclick="requestNotificationPermission()" style="padding: 6px 14px; font-size: 13px; border-radius: 16px; min-width: 90px; height: 32px;">Включить</button>
+                            </div>
+                        </div>
+                        <div class="ios-row" id="notif-test-row" style="display: none;">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box" style="background: #34C759;">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="white" stroke-width="2" fill="none">
+                                        <polyline points="20 6 9 17 4 12"></polyline>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title">Тестовое уведомление</div>
+                                    <div class="ios-row-subtitle">Проверить звук и вибрацию на телефоне</div>
+                                </div>
+                            </div>
+                            <div class="ios-row-right">
+                                <button type="button" class="btn-secondary" onclick="sendTestNotification()" style="padding: 6px 14px; font-size: 13px; border-radius: 16px; height: 32px;">Тест</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ios-explainer-text" id="notif-permission-hint">Включите системные уведомления, чтобы получать сообщения на телефон в фоне.</div>
+                </div>
+
+                <div class="ios-settings-group">
+                    <div class="ios-group-title">СООБЩЕНИЯ ОТ ПОЛЬЗОВАТЕЛЕЙ</div>
+                    <div class="ios-group-card">
+                        <div class="ios-row">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box" style="background: #34C759;"><svg viewBox="0 0 24 24" width="18" height="18" stroke="white" stroke-width="2" fill="none"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></div>
+                                <div>
+                                    <div class="ios-row-title">Звук сообщений</div>
+                                    <div class="ios-row-subtitle">Звуковое оповещение о входящем сообщении</div>
+                                </div>
+                            </div>
+                            <div class="ios-row-right">
+                                <label class="switch"><input type="checkbox" id="toggle-notif-sound" checked onchange="saveNotificationSettings()"><span class="slider round"></span></label>
+                            </div>
+                        </div>
+
+                        <div class="ios-row">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box" style="background: #FF9500;"><svg viewBox="0 0 24 24" width="18" height="18" stroke="white" stroke-width="2" fill="none"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line><path d="M2 8v8"></path><path d="M22 8v8"></path></svg></div>
+                                <div>
+                                    <div class="ios-row-title">Вибрация</div>
+                                    <div class="ios-row-subtitle">Виброотклик при получении сообщения</div>
+                                </div>
+                            </div>
+                            <div class="ios-row-right">
+                                <label class="switch"><input type="checkbox" id="toggle-vibration" checked onchange="toggleVibration(this.checked)"><span class="slider round"></span></label>
+                            </div>
+                        </div>
+
+                        <div class="ios-row">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box" style="background: #007AFF;"><svg viewBox="0 0 24 24" width="18" height="18" stroke="white" stroke-width="2" fill="none"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg></div>
+                                <div>
+                                    <div class="ios-row-title">Предпросмотр сообщений</div>
+                                    <div class="ios-row-subtitle">Показывать имя собеседника и текст сообщения</div>
+                                </div>
+                            </div>
+                            <div class="ios-row-right">
+                                <label class="switch"><input type="checkbox" id="toggle-notif-preview" checked onchange="saveNotificationSettings()"><span class="slider round"></span></label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ios-explainer-text">Уведомления приходят только о входящих сообщениях от пользователей. Лишние системные оповещения отключены.</div>
+                </div>
+            </div>
+
+            <div id="tab-folders" class="tab-content hidden">
+                <div class="ios-settings-group">
+                    <div class="ios-group-title">Папки чатов</div>
+                    <div style="margin-bottom: 12px;">
+                        <button class="btn-primary" onclick="openFolderModal()" style="width: 100%; border-radius: 12px; padding: 12px; font-size: 15px; font-weight: 600;">+ Создать новую папку</button>
+                    </div>
+                    <div id="settings-folders-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                </div>
+            </div>
+
+            <!-- Tab: Язык (Language) -->
+            <div id="tab-language" class="tab-content hidden">
+                <div class="ios-settings-group">
+                    <div class="ios-group-title accent-title" data-i18n="language">Язык интерфейса</div>
+                    <div class="ios-group-card">
+                        <div class="ios-row clickable lang-row active" id="lang-row-ru" onclick="selectAppLanguage('ru')">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box" style="background: #007aff;">
+                                    <svg viewBox="0 0 24 24" width="19" height="19" stroke="white" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                                </div>
+                                <div><div class="ios-row-title">Русский</div><div class="ios-row-subtitle">Русский</div></div>
+                            </div>
+                            <span class="lang-check-icon">✓</span>
+                        </div>
+
+                        <div class="ios-row clickable lang-row" id="lang-row-uk" onclick="selectAppLanguage('uk')">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box" style="background: #34c759;">
+                                    <svg viewBox="0 0 24 24" width="19" height="19" stroke="white" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                                </div>
+                                <div><div class="ios-row-title">Українська</div><div class="ios-row-subtitle">Ukrainian</div></div>
+                            </div>
+                            <span class="lang-check-icon">✓</span>
+                        </div>
+
+                        <div class="ios-row clickable lang-row" id="lang-row-en" onclick="selectAppLanguage('en')">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box" style="background: #ff9500;">
+                                    <svg viewBox="0 0 24 24" width="19" height="19" stroke="white" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                                </div>
+                                <div><div class="ios-row-title">English</div><div class="ios-row-subtitle">English</div></div>
+                            </div>
+                            <span class="lang-check-icon">✓</span>
+                        </div>
+
+                        <div class="ios-row clickable lang-row" id="lang-row-be" onclick="selectAppLanguage('be')">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box" style="background: #af52de;">
+                                    <svg viewBox="0 0 24 24" width="19" height="19" stroke="white" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                                </div>
+                                <div><div class="ios-row-title">Беларуская</div><div class="ios-row-subtitle">Belarusian</div></div>
+                            </div>
+                            <span class="lang-check-icon">✓</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-security" class="tab-content hidden">
+                <div style="text-align: center; padding: 15px 0 20px 0;">
+                    <div style="width: 72px; height: 72px; border-radius: 50%; background: var(--bg-input); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px; border: 1px solid var(--border);">
+                        <svg viewBox="0 0 24 24" width="36" height="36" stroke="var(--accent)" stroke-width="1.8" fill="none"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                    </div>
+                    <div style="font-size: 17px; font-weight: 600;">Устройства и безопасность</div>
+                    <div style="font-size: 13px; color: var(--text-muted); margin-top: 4px; max-width: 320px; margin-left: auto; margin-right: auto;">
+                        Управляйте сеансами на всех ваших устройствах и защитой аккаунта
+                    </div>
+                    <div style="margin-top: 15px;">
+                        <button class="btn-primary" style="border-radius: 20px; padding: 9px 20px; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;" onclick="openModal('qr-link-modal')">
+                            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                            Подключить устройство по QR
+                        </button>
+                    </div>
+                </div>
+
+                <div class="ios-settings-group">
+                    <div class="ios-group-title">Вход и защита</div>
+                    <div class="ios-group-card">
+                        <div class="ios-row">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box" style="background: #34C759;"><svg viewBox="0 0 24 24" width="18" height="18" stroke="white" stroke-width="2" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></div>
+                                <div>
+                                    <div class="ios-row-title">Двухфакторная аутентификация</div>
+                                    <div class="ios-row-subtitle" id="label-2fa-status">Дополнительный облачный пароль при входе</div>
+                                </div>
+                            </div>
+                            <div class="ios-row-right">
+                                <label class="switch"><input type="checkbox" id="set-2fa" onchange="handle2FAToggle(this)"><span class="slider round"></span></label>
+                            </div>
+                        </div>
+                        <div class="ios-row">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box" style="background: #007AFF;"><svg viewBox="0 0 24 24" width="18" height="18" stroke="white" stroke-width="2" fill="none"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg></div>
+                                <div>
+                                    <div class="ios-row-title">Код-пароль</div>
+                                    <div class="ios-row-subtitle" id="label-passcode-status">Блокировка экрана приложения</div>
+                                </div>
+                            </div>
+                            <div class="ios-row-right">
+                                <label class="switch"><input type="checkbox" id="set-passcode" onchange="handlePasscodeToggle(this)"><span class="slider round"></span></label>
+                            </div>
+                        </div>
+                        <div class="ios-row">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box" style="background: #FF9500;"><svg viewBox="0 0 24 24" width="18" height="18" stroke="white" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
+                                <div>
+                                    <div class="ios-row-title">Автозавершение сессий</div>
+                                    <div class="ios-row-subtitle">При неактивности устройства</div>
+                                </div>
+                            </div>
+                            <div class="ios-row-right">
+                                <select id="set-session-ttl" class="ios-select" onchange="window.updateSessionTTL(this.value)">
+                                    <option value="1w">1 неделя</option>
+                                    <option value="1m" selected>1 месяц</option>
+                                    <option value="3m">3 месяца</option>
+                                    <option value="6m">6 месяцев</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ios-settings-group">
+                    <div class="ios-group-title">Текущий сеанс</div>
+                    <div class="ios-group-card" id="current-session-box">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <div class="ios-settings-group">
+                    <div class="ios-group-title">Активные сеансы</div>
+                    <div class="ios-group-card" id="active-sessions-list">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <div style="margin-top: 15px; margin-bottom: 25px;">
+                    <button class="btn-danger" style="width: 100%; border-radius: 12px; padding: 13px; font-size: 15px; font-weight: 600;" onclick="terminateAllOtherSessions()">
+                        Завершить все другие сеансы
+                    </button>
+                </div>
+            </div>
+
+            <div id="tab-privacy" class="tab-content hidden">
+                <!-- Group 1: Status in Network & Screenshots (Screenshot 1) -->
+                <div class="ios-settings-group">
+                    <div class="ios-group-card">
+                        <div class="ios-row">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box">
+                                    <svg viewBox="0 0 24 24" width="19" height="19" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title">Показывать, что я в сети</div>
+                                </div>
+                            </div>
+                            <div class="ios-row-right">
+                                <label class="switch"><input type="checkbox" id="toggle-online-status" checked onchange="savePrivacy(true)"><span class="slider round"></span></label>
+                            </div>
+                        </div>
+
+                        <div class="ios-row">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box">
+                                    <svg viewBox="0 0 24 24" width="19" height="19" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title">Оповещать о скриншотах</div>
+                                </div>
+                            </div>
+                            <div class="ios-row-right">
+                                <label class="switch"><input type="checkbox" id="toggle-screenshot-alerts" checked onchange="toggleScreenshotAlerts(this.checked)"><span class="slider round"></span></label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ios-explainer-text">Оповещать собеседника при создании скриншота в диалоге.</div>
+                </div>
+
+                <!-- Group 2: Безопасность (Screenshot 1: Accent Header Title) -->
+                <div class="ios-settings-group">
+                    <div class="ios-group-title accent-title">Безопасность</div>
+                    <div class="ios-group-card">
+                        <div class="ios-row clickable" onclick="switchTab('security')">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box">
+                                    <svg viewBox="0 0 24 24" width="19" height="19" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title">Код-пароль</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <span id="privacy-passcode-status-pill" style="font-size: 15px; color: var(--text-muted);">Выкл.</span>
+                                <div class="ios-chevron">›</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ios-explainer-text">Защита приложения цифровым кодом при каждом входе.</div>
+                </div>
+
+                <!-- Group 3: Заблокированные -->
+                <div class="ios-settings-group">
+                    <div class="ios-group-title accent-title">Заблокированные</div>
+                    <div class="ios-group-card">
+                        <div class="ios-row clickable" onclick="switchTab('blocked')">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box" style="background: rgba(255, 59, 48, 0.15); color: #ff3b30;">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title">Заблокированные пользователи</div>
+                                    <div class="ios-row-subtitle" id="blocked-status-text">Вы никого не заблокировали.</div>
+                                </div>
+                            </div>
+                            <div class="ios-chevron">›</div>
+                        </div>
+                    </div>
+                    <div class="ios-explainer-text">Заблокированные пользователи не смогут писать вам сообщения и звонить.</div>
+                </div>
+
+                <!-- Group 5: Кто может видеть мои данные -->
+                <div class="ios-settings-group">
+                    <div class="ios-group-title">Кто может видеть мои данные</div>
+                    <div class="ios-group-card">
+                        <div class="ios-row">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></div>
+                                <div>
+                                    <div class="ios-row-title">Номер телефона</div>
+                                </div>
+                            </div>
+                            <div class="ios-row-right">
+                                <select id="set-priv-phone" class="ios-select" onchange="savePrivacy(true)">
+                                    <option value="nobody">Никто</option>
+                                    <option value="contacts">Мои контакты</option>
+                                    <option value="everybody">Все</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="ios-row">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></div>
+                                <div>
+                                    <div class="ios-row-title">Время захода и статус онлайн</div>
+                                </div>
+                            </div>
+                            <div class="ios-row-right">
+                                <select id="set-priv-last" class="ios-select" onchange="savePrivacy(true)">
+                                    <option value="everybody">Все</option>
+                                    <option value="contacts">Мои контакты</option>
+                                    <option value="nobody">Никто</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="ios-row">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg></div>
+                                <div>
+                                    <div class="ios-row-title">Звонки</div>
+                                </div>
+                            </div>
+                            <div class="ios-row-right">
+                                <select id="set-priv-calls" class="ios-select" onchange="savePrivacy(true)">
+                                    <option value="everybody">Все</option>
+                                    <option value="contacts">Мои контакты</option>
+                                    <option value="nobody">Никто</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Group 6: Сообщения и приватность -->
+                <div class="ios-settings-group">
+                    <div class="ios-group-title">Сообщения и приватность</div>
+                    <div class="ios-group-card">
+                        <div class="ios-row">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title">Отчёты о прочтении (✓✓)</div>
+                                    <div class="ios-row-subtitle">Собеседники не увидят, что вы прочитали сообщение</div>
+                                </div>
+                            </div>
+                            <div class="ios-row-right">
+                                <label class="switch"><input type="checkbox" id="toggle-read-receipts" onchange="window.updateReadReceipts(this.checked)" checked><span class="slider round"></span></label>
+                            </div>
+                        </div>
+
+                        <div class="ios-row">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><circle cx="5" cy="12" r="1.5"></circle><circle cx="12" cy="12" r="1.5"></circle><circle cx="19" cy="12" r="1.5"></circle></svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title">Статус «Печатает...»</div>
+                                    <div class="ios-row-subtitle">Скрывать индикатор набора текста от других</div>
+                                </div>
+                            </div>
+                            <div class="ios-row-right">
+                                <label class="switch"><input type="checkbox" id="toggle-typing-status" onchange="window.updateTypingIndicator(this.checked)" checked><span class="slider round"></span></label>
+                            </div>
+                        </div>
+
+                        <div class="ios-row">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title">Скрывать K-ID в шапке чата</div>
+                                    <div class="ios-row-subtitle">Чистый вид диалогов без технического ID (Ghost)</div>
+                                </div>
+                            </div>
+                            <div class="ios-row-right">
+                                <label class="switch"><input type="checkbox" id="toggle-hide-kid-chat" onchange="window.updateHideKidInChat(this.checked)"><span class="slider round"></span></label>
+                            </div>
+                        </div>
+
+                        <div class="ios-row">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title">Предпросмотр в уведомлениях</div>
+                                    <div class="ios-row-subtitle">Показывать текст входящих сообщений</div>
+                                </div>
+                            </div>
+                            <div class="ios-row-right">
+                                <label class="switch"><input type="checkbox" id="toggle-preview-notif" onchange="window.updatePreviewNotificationText(this.checked)" checked><span class="slider round"></span></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Group 7: Видимость профиля -->
+                <div class="ios-settings-group">
+                    <div class="ios-group-title">Видимость профиля</div>
+                    <div class="ios-group-card">
+                        <div class="ios-row">
+                            <div class="ios-row-left">
+                                <div><div class="ios-row-title">Показывать в поиске</div></div>
+                            </div>
+                            <div class="ios-row-right">
+                                <label class="switch"><input type="checkbox" id="set-searchable" checked onchange="savePrivacy(true)"><span class="slider round"></span></label>
+                            </div>
+                        </div>
+                        <div class="ios-row">
+                            <div class="ios-row-left">
+                                <div><div class="ios-row-title">Скрыть мой KNX ID</div></div>
+                            </div>
+                            <div class="ios-row-right">
+                                <label class="switch"><input type="checkbox" id="set-hide-kid" onchange="savePrivacy(true)"><span class="slider round"></span></label>
+                            </div>
+                        </div>
+                        <div class="ios-row">
+                            <div class="ios-row-left">
+                                <div><div class="ios-row-title">Скрыть аватарку от незнакомых</div></div>
+                            </div>
+                            <div class="ios-row-right">
+                                <label class="switch"><input type="checkbox" id="set-hide-avatar" onchange="savePrivacy(true)"><span class="slider round"></span></label>
+                            </div>
+                        </div>
+                        <div class="ios-row">
+                            <div class="ios-row-left">
+                                <div><div class="ios-row-title">Скрыть информацию «О себе»</div></div>
+                            </div>
+                            <div class="ios-row-right">
+                                <label class="switch"><input type="checkbox" id="set-hide-bio" onchange="savePrivacy(true)"><span class="slider round"></span></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Group 8: Удаление аккаунта -->
+                <div class="ios-settings-group" style="margin-top: 25px;">
+                    <div class="ios-group-title" style="color: var(--danger);">Удаление аккаунта</div>
+                    <div class="ios-group-card">
+                        <div class="ios-row clickable" onclick="openDeleteAccountModal()">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box" style="color: var(--danger);"><svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg></div>
+                                <div>
+                                    <div class="ios-row-title" style="color: var(--danger); font-weight: 600;">Удалить мой аккаунт</div>
+                                    <div class="ios-row-subtitle">Полное и безвозвратное стирание данных</div>
+                                </div>
+                            </div>
+                            <div class="ios-chevron" style="color: var(--danger);">›</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-blocked" class="tab-content hidden">
+                <div class="ios-settings-group">
+                    <div class="ios-group-title">ЗАБЛОКИРОВАТЬ ПОЛЬЗОВАТЕЛЯ</div>
+                    <div class="ios-group-card" style="padding: 12px 16px;">
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="text" id="input-block-kid" placeholder="Введите K-ID пользователя" style="flex: 1; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-main); color: var(--text-main); font-size: 14px; outline: none;">
+                            <button type="button" class="btn-danger" style="border-radius: 10px; padding: 10px 16px; font-size: 14px; font-weight: 600; white-space: nowrap;" onclick="blockUserByKid()">Заблокировать</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ios-settings-group">
+                    <div class="ios-group-title">ЗАБЛОКИРОВАННЫЕ ПОЛЬЗОВАТЕЛИ</div>
+                    <div class="ios-group-card" id="blocked-users-list" style="padding: 10px 16px;">
+                        <!-- blocked users rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-storage" class="tab-content hidden">
+                <div class="ios-settings-group">
+                    <div class="ios-group-title">ИСПОЛЬЗОВАНИЕ ПАМЯТИ</div>
+                    <div class="ios-group-card" style="padding: 16px;">
+                        <div style="font-size: 14px; color: var(--text-muted); margin-bottom: 12px;" id="storage-tab-summary-label">Занято: рассчитывается...</div>
+                        <div class="storage-progress-bar" style="margin-bottom: 16px;">
+                            <div id="storage-tab-bar-media" class="storage-progress-seg seg-media" style="width: 35%;"></div>
+                            <div id="storage-tab-bar-voice" class="storage-progress-seg seg-voice" style="width: 25%;"></div>
+                            <div id="storage-tab-bar-docs" class="storage-progress-seg seg-docs" style="width: 20%;"></div>
+                            <div id="storage-tab-bar-db" class="storage-progress-seg seg-db" style="width: 20%;"></div>
+                        </div>
+                        <div class="storage-categories-list">
+                            <div class="storage-category-row">
+                                <div class="storage-category-left">
+                                    <span class="storage-category-dot" style="background: #2aabee;"></span>
+                                    <div>
+                                        <div class="storage-category-name">Фотографии и медиа</div>
+                                        <div class="storage-category-hint">Изображения из чатов</div>
+                                    </div>
+                                </div>
+                                <span class="storage-category-size" id="storage-tab-val-media">--</span>
+                            </div>
+                            <div class="storage-category-row">
+                                <div class="storage-category-left">
+                                    <span class="storage-category-dot" style="background: #a259ff;"></span>
+                                    <div>
+                                        <div class="storage-category-name">Голосовые и аудио</div>
+                                        <div class="storage-category-hint">Аудиозаписи</div>
+                                    </div>
+                                </div>
+                                <span class="storage-category-size" id="storage-tab-val-voice">--</span>
+                            </div>
+                            <div class="storage-category-row">
+                                <div class="storage-category-left">
+                                    <span class="storage-category-dot" style="background: #34c759;"></span>
+                                    <div>
+                                        <div class="storage-category-name">Файлы и документы</div>
+                                        <div class="storage-category-hint">Вложения и файлы</div>
+                                    </div>
+                                </div>
+                                <span class="storage-category-size" id="storage-tab-val-docs">--</span>
+                            </div>
+                            <div class="storage-category-row">
+                                <div class="storage-category-left">
+                                    <span class="storage-category-dot" style="background: #ff9500;"></span>
+                                    <div>
+                                        <div class="storage-category-name">База сообщений и кэш</div>
+                                        <div class="storage-category-hint">Тексты переписок, черновики</div>
+                                    </div>
+                                </div>
+                                <span class="storage-category-size" id="storage-tab-val-db">--</span>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-danger" style="width: 100%; border-radius: 12px; padding: 12px; font-weight: 600; font-size: 14px; margin-top: 18px;" onclick="clearAppCache()">
+                            Очистить весь кэш KNX
+                        </button>
+                    </div>
+                </div>
+
+                <div class="ios-settings-group">
+                    <div class="ios-group-title">АВТОЗАГРУЗКА И СЖАТИЕ МЕДИА</div>
+                    <div class="ios-group-card">
+                        <div class="ios-row">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box" style="background: #007aff;">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="white" stroke-width="2" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title">Автозагрузка медиа</div>
+                                    <div class="ios-row-subtitle">Автоматически скачивать входящие фото</div>
+                                </div>
+                            </div>
+                            <div class="ios-row-right">
+                                <label class="switch"><input type="checkbox" id="toggle-auto-download-media" checked onchange="updateAutoMedia(this.checked)"><span class="slider round"></span></label>
+                            </div>
+                        </div>
+                        <div class="ios-row">
+                            <div class="ios-row-left">
+                                <div class="ios-icon-box" style="background: #34c759;">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="white" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                </div>
+                                <div>
+                                    <div class="ios-row-title">Сжатие фотографий</div>
+                                    <div class="ios-row-subtitle">Экономить память при отправке фото</div>
+                                </div>
+                            </div>
+                            <div class="ios-row-right">
+                                <label class="switch"><input type="checkbox" id="toggle-compress-photos" checked onchange="updateCompressPhotos(this.checked)"><span class="slider round"></span></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="edit-group-screen" class="screen hidden fullscreen-panel" style="z-index: 200;">
+        <div class="fullscreen-header"><button class="icon-btn" onclick="closeEditGroupScreen()">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        </button><h2>Редактировать сообщество</h2></div>
+        <div class="fullscreen-content" style="max-width: 500px; margin: 0 auto; padding: 20px; width: 100%;">
+            <div class="upload-flex" style="display:flex; gap: 15px; margin-bottom: 15px;">
+                <div class="upload-box text-center" style="flex: 1;"><img id="edit-group-avatar-preview" class="avatar-img-large" src=""><br><div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Аватарка</div><label class="file-upload-btn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg> Выбрать фото<input type="file" id="edit-group-avatar-file" accept="image/*"></label></div>
+                <div class="upload-box text-center" style="flex: 1;"><div id="edit-group-header-preview" class="header-preview"></div><div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Шапка</div><label class="file-upload-btn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg> Выбрать фото<input type="file" id="edit-group-header-file" accept="image/*"></label></div>
+            </div>
+            <label>Название:</label><input type="text" id="edit-group-name" placeholder="Название">
+            <label>Описание:</label><input type="text" id="edit-group-desc" placeholder="Описание">
+            <button class="btn-primary mt-3" onclick="saveGroupEdit()">Сохранить изменения</button>
+        </div>
+    </div>
+
+    <div id="group-modal" class="modal hidden">
+        <div class="modal-content scale-in premium-create-modal">
+            <div class="modal-header">
+                <div>
+                    <h2 id="create-community-title" style="margin: 0; font-size: 20px; font-weight: 700;">Создать сообщество</h2>
+                    <p style="margin: 3px 0 0 0; font-size: 13px; color: var(--text-muted);" id="create-community-subtitle">Новая группа или публичный канал</p>
+                </div>
+                <button class="icon-btn close-btn" onclick="closeModal('group-modal')">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+
+            <!-- Segmented Type Selector Cards -->
+            <div class="create-type-cards">
+                <div class="create-type-card active" id="type-card-group" onclick="selectCommunityType('group')">
+                    <div class="create-type-icon">
+                        <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                    </div>
+                    <div class="create-type-info">
+                        <span class="create-type-name">Группа</span>
+                        <span class="create-type-hint">Общение и обсуждения</span>
+                    </div>
+                    <div class="create-type-check">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="3" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </div>
+                </div>
+
+                <div class="create-type-card" id="type-card-channel" onclick="selectCommunityType('channel')">
+                    <div class="create-type-icon">
+                        <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                            <line x1="12" y1="2" x2="12" y2="4"></line>
+                        </svg>
+                    </div>
+                    <div class="create-type-info">
+                        <span class="create-type-name">Канал</span>
+                        <span class="create-type-hint">Трансляция постов</span>
+                    </div>
+                    <div class="create-type-check">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="3" fill="none"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Avatar Uploader Circle -->
+            <div class="create-avatar-wrapper">
+                <div class="create-avatar-slot" id="create-group-avatar-slot" onclick="document.getElementById('create-group-avatar-input').click()">
+                    <img id="create-group-avatar-preview" class="create-avatar-preview hidden" src="" alt="Avatar">
+                    <div class="create-avatar-placeholder" id="create-avatar-placeholder">
+                        <svg viewBox="0 0 24 24" width="28" height="28" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                            <circle cx="12" cy="13" r="4"></circle>
+                        </svg>
+                        <span>Фото</span>
+                    </div>
+                </div>
+                <input type="file" id="create-group-avatar-input" accept="image/*" class="hidden" onchange="handleNewGroupAvatarSelect(this)">
+                <span style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Нажмите, чтобы выбрать аватар</span>
+            </div>
+
+            <div class="form-group-premium">
+                <label for="group-name" class="premium-input-label">Название</label>
+                <input type="text" id="group-name" placeholder="Например: Новости команды..." autocomplete="off">
+            </div>
+
+            <div class="form-group-premium">
+                <label for="group-desc" class="premium-input-label">Описание (необязательно)</label>
+                <input type="text" id="group-desc" placeholder="Краткое описание сообщества..." autocomplete="off">
+            </div>
+
+            <button class="btn-primary create-submit-btn" id="btn-submit-create-group" onclick="createGroup()">
+                <span id="create-btn-text">Создать группу</span>
+                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- FLOATING BOTTOM DOCK BAR -->
+    <div id="floating-bottom-bar" class="floating-dock-bar hidden">
+        <!-- Tab: Чаты -->
+        <div class="dock-item active" data-tab="chats" onclick="switchNav('chats', this)" title="Чаты">
+            <div class="dock-icon-wrap">
+                <svg class="dock-icon dock-icon-outline" viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <span id="dock-badge-chats" class="dock-badge hidden">0</span>
+            </div>
+            <span class="dock-label">Чаты</span>
+        </div>
+
+        <!-- Tab: Архив -->
+        <div class="dock-item" data-tab="archive" onclick="switchNav('archive', this)" title="Архив">
+            <div class="dock-icon-wrap">
+                <svg class="dock-icon" viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="21 8 21 21 3 21 3 8"></polyline>
+                    <rect x="1" y="3" width="22" height="5" rx="1"></rect>
+                    <line x1="10" y1="12" x2="14" y2="12"></line>
+                </svg>
+                <span id="dock-badge-archive" class="dock-badge hidden">0</span>
+            </div>
+            <span class="dock-label">Архив</span>
+        </div>
+
+        <!-- Tab: Настройки -->
+        <div class="dock-item" data-tab="settings" onclick="switchNav('settings', this)" title="Настройки">
+            <div class="dock-icon-wrap">
+                <img id="dock-user-avatar" class="dock-avatar-img hidden" src="" alt="Настройки">
+                <svg id="dock-gear-fallback" class="dock-icon" viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            </div>
+            <span class="dock-label">Настройки</span>
+        </div>
+    </div>
+
+    <!-- QR CAMERA SCANNER & LINK MODAL -->
+    <div id="qr-link-modal" class="modal hidden">
+        <div class="modal-content animate-slide-up" style="max-width: 380px; text-align: center;">
+            <div class="modal-header" style="margin-bottom: 12px;">
+                <h3 style="margin: 0; font-size: 18px;">Подключение устройства</h3>
+                <button class="icon-btn close-btn" onclick="closeQRModal()">
+                    <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+
+            <!-- Tabs Switcher -->
+            <div style="background: var(--bg-input); padding: 3px; border-radius: 10px; display: flex; gap: 4px; margin-bottom: 15px;">
+                <button class="qr-tab-btn active" id="btn-qr-tab-scan" onclick="switchQRTab('scan')"><svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" style="margin-right: 4px; vertical-align: middle;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>Сканировать QR</button>
+                <button class="qr-tab-btn" id="btn-qr-tab-show" onclick="switchQRTab('show')"><svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" style="margin-right: 4px; vertical-align: middle;"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>Мой QR-код</button>
+            </div>
+
+            <!-- Tab 1: Live Camera Scanner -->
+            <div id="qr-view-scan">
+                <div class="qr-viewfinder" id="qr-viewfinder">
+                    <video id="qr-video" class="qr-camera-feed" playsinline autoplay muted></video>
+                    <div class="qr-scanner-laser"></div>
+                    <div class="qr-corner tl"></div>
+                    <div class="qr-corner tr"></div>
+                    <div class="qr-corner bl"></div>
+                    <div class="qr-corner br"></div>
+                </div>
+                <canvas id="qr-scan-canvas" style="display: none;"></canvas>
+                <div id="qr-scan-status" style="font-size: 13px; font-weight: 500; color: var(--text-main); margin-top: 10px;">
+                    Наведите камеру на QR-код
+                </div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px; line-height: 1.4; padding: 0 10px;">
+                    Держите QR-код в рамке для мгновенного входа и привязки устройства.
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 14px;">
+                    <button class="btn-primary" style="flex: 1; border-radius: 12px; padding: 10px; font-size: 13px;" onclick="startQRCamera()">
+                        <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" style="margin-right: 4px; vertical-align: middle;"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>Перезапустить камеру
+                    </button>
+                    <button class="btn-secondary" style="border-radius: 12px; padding: 10px 14px; font-size: 13px;" onclick="closeQRModal()">
+                        Отмена
+                    </button>
+                </div>
+                <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border-color, rgba(0,0,0,0.08)); text-align: left;">
+                    <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 6px;">Или введите текстовый токен QR вручную:</div>
+                    <div style="display: flex; gap: 6px;">
+                        <input type="text" id="manual-qr-token-input" placeholder="knx_qr_..." style="font-size: 12px; padding: 7px 10px; margin: 0; flex: 1; border-radius: 8px;" onkeydown="if(event.key==='Enter') submitManualQRToken()">
+                        <button class="btn-primary" style="padding: 7px 13px; font-size: 12px; border-radius: 8px; white-space: nowrap;" onclick="submitManualQRToken()">Ввести</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Show My QR Code -->
+            <div id="qr-view-show" class="hidden" style="padding: 10px 0 15px 0;">
+                <div style="width: 190px; height: 190px; margin: 0 auto 15px auto; background: white; padding: 10px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center;">
+                    <img id="my-device-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=170x170&data=KNX_LINK_AUTH_SESSION_VALID" alt="QR Code" style="width: 170px; height: 170px; border-radius: 8px;">
+                </div>
+                <div style="font-size: 14px; font-weight: 600; margin-bottom: 4px;">Отсканируйте с другого устройства</div>
+                <div style="font-size: 12px; color: var(--text-muted); line-height: 1.4; padding: 0 15px;">
+                    Откройте KNX на телефоне или компьютере, выберите «Сканировать QR» и наведите камеру на этот код.
+                </div>
+                <button class="btn-secondary" style="width: 100%; border-radius: 12px; padding: 11px; margin-top: 18px;" onclick="closeQRModal()">
+                    Закрыть
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SESSION DETAILS MODAL -->
+    <div id="session-details-modal" class="modal hidden">
+        <div class="modal-content animate-slide-up" style="max-width: 400px;" id="session-details-content">
+            <!-- Rendered by JS -->
+        </div>
+    </div>
+
+    <!-- FULLSCREEN PASSCODE LOCK SCREEN -->
+    <div id="passcode-lock-screen" class="passcode-screen hidden">
+        <div class="passcode-box">
+            <div class="passcode-lock-icon">
+                <svg viewBox="0 0 24 24" width="40" height="40" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+            </div>
+            <h3 id="passcode-title" class="passcode-title">Введите код-пароль</h3>
+            <p id="passcode-sub" class="passcode-sub">KNX Messenger</p>
+            
+            <div class="passcode-dots" id="passcode-dots">
+                <span class="pdot"></span>
+                <span class="pdot"></span>
+                <span class="pdot"></span>
+                <span class="pdot"></span>
+            </div>
+
+            <div class="passcode-pad">
+                <button type="button" class="passcode-key" onclick="pressPasscodeDigit('1')"><span>1</span></button>
+                <button type="button" class="passcode-key" onclick="pressPasscodeDigit('2')"><span>2</span><small>ABC</small></button>
+                <button type="button" class="passcode-key" onclick="pressPasscodeDigit('3')"><span>3</span><small>DEF</small></button>
+                <button type="button" class="passcode-key" onclick="pressPasscodeDigit('4')"><span>4</span><small>GHI</small></button>
+                <button type="button" class="passcode-key" onclick="pressPasscodeDigit('5')"><span>5</span><small>JKL</small></button>
+                <button type="button" class="passcode-key" onclick="pressPasscodeDigit('6')"><span>6</span><small>MNO</small></button>
+                <button type="button" class="passcode-key" onclick="pressPasscodeDigit('7')"><span>7</span><small>PQRS</small></button>
+                <button type="button" class="passcode-key" onclick="pressPasscodeDigit('8')"><span>8</span><small>TUV</small></button>
+                <button type="button" class="passcode-key" onclick="pressPasscodeDigit('9')"><span>9</span><small>WXYZ</small></button>
+                <button type="button" class="passcode-key key-text" onclick="emergencyPasscodeLogout()"><span>Выйти</span></button>
+                <button type="button" class="passcode-key" onclick="pressPasscodeDigit('0')"><span>0</span></button>
+                <button type="button" class="passcode-key key-icon" onclick="deletePasscodeDigit()">
+                    <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
+                        <line x1="18" y1="9" x2="12" y2="15"></line>
+                        <line x1="12" y1="9" x2="18" y2="15"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PASSCODE SETUP MODAL -->
+    <div id="setup-passcode-modal" class="modal hidden">
+        <div class="modal-content animate-slide-up" style="max-width: 360px; text-align: center;">
+            <div class="modal-header">
+                <h3 id="setup-passcode-title" style="margin: 0; font-size: 18px;">Установка код-пароля</h3>
+                <button class="icon-btn close-btn" onclick="closeModal('setup-passcode-modal')">
+                    <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Придумайте 4-значный цифровой код для защиты приложения</p>
+            <input type="password" id="input-new-passcode" maxlength="4" pattern="[0-9]*" inputmode="numeric" placeholder="Новый код (4 цифры)" style="text-align: center; font-size: 20px; letter-spacing: 6px;">
+            <input type="password" id="input-confirm-passcode" maxlength="4" pattern="[0-9]*" inputmode="numeric" placeholder="Повторите код" style="text-align: center; font-size: 20px; letter-spacing: 6px;">
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="btn-secondary" onclick="closeModal('setup-passcode-modal')">Отмена</button>
+                <button class="btn-primary" onclick="saveNewPasscode()">Сохранить</button>
+            </div>
+            <button id="btn-disable-passcode" class="btn-danger hidden" style="margin-top: 12px; border-radius: 10px; padding: 11px;" onclick="disablePasscode()">Отключить код-пароль</button>
+        </div>
+    </div>
+
+    <!-- 2FA SETUP MODAL -->
+    <div id="setup-2fa-modal" class="modal hidden">
+        <div class="modal-content animate-slide-up" style="max-width: 380px;">
+            <div class="modal-header">
+                <h3 id="setup-2fa-title" style="margin: 0; font-size: 18px;">Двухфакторная защита</h3>
+                <button class="icon-btn close-btn" onclick="closeModal('setup-2fa-modal')">
+                    <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Установите дополнительный облачный пароль для подтверждения входа на новых устройствах.</p>
+            <input type="password" id="input-2fa-pass" placeholder="Облачный пароль">
+            <input type="password" id="input-2fa-confirm" placeholder="Повторите пароль">
+            <input type="text" id="input-2fa-hint" placeholder="Подсказка для пароля (необязательно)">
+            <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="btn-secondary" onclick="closeModal('setup-2fa-modal')">Отмена</button>
+                <button class="btn-primary" onclick="save2FASettings()">Сохранить</button>
+            </div>
+            <button id="btn-disable-2fa" class="btn-danger hidden" style="margin-top: 12px; border-radius: 10px; padding: 11px;" onclick="disable2FASettings()">Отключить 2FA</button>
+        </div>
+    </div>
+
+    <!-- CLOUD 2FA LOGIN PROMPT MODAL -->
+    <div id="cloud-2fa-modal" class="modal hidden">
+        <div class="modal-content animate-slide-up" style="max-width: 360px; text-align: center;">
+            <div class="modal-header">
+                <h3 style="margin: 0; font-size: 18px;">Облачный пароль</h3>
+                <button class="icon-btn close-btn" onclick="closeModal('cloud-2fa-modal')">
+                    <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">В аккаунте включена двухфакторная аутентификация. Введите ваш облачный пароль:</div>
+            <div id="cloud-2fa-hint-box" class="hidden" style="font-size: 12px; color: var(--accent); margin-bottom: 10px; background: rgba(0,132,255,0.08); padding: 8px 12px; border-radius: 8px;"></div>
+            <input type="password" id="input-cloud-login-pass" placeholder="Облачный пароль" onkeydown="if(event.key==='Enter') submitCloud2FALogin()">
+            <button class="btn-primary mt-3" onclick="submitCloud2FALogin()">Подтвердить вход</button>
+        </div>
+    </div>
+
+    <!-- FULL PROFILE DELETION MODAL (TELEGRAM STYLE) -->
+    <div id="delete-account-modal" class="modal hidden">
+        <div class="modal-content animate-slide-up" style="max-width: 400px; text-align: center;">
+            <div class="modal-header" style="justify-content: flex-end; margin-bottom: 0;">
+                <button class="icon-btn close-btn" onclick="closeModal('delete-account-modal')">
+                    <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(228, 30, 63, 0.12); color: var(--danger); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto;">
+                <svg viewBox="0 0 24 24" width="28" height="28" stroke="currentColor" stroke-width="2" fill="none">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+            </div>
+            <h3 style="margin: 0 0 8px 0; font-size: 19px; font-weight: 700; color: var(--danger);">Удалить аккаунт навсегда?</h3>
+            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 18px;">
+                Вы собираетесь <b>полностью и безвозвратно удалить</b> свой профиль KNX. Все ваши переписки, файлы, сессии и настройки будут навсегда стерты. Это действие <b>нельзя отменить</b>.
+            </p>
+
+            <div style="text-align: left; margin-bottom: 12px;">
+                <label style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">
+                    Введите пароль от аккаунта:
+                </label>
+                <input type="password" id="input-delete-acc-pass" placeholder="Пароль" style="margin-bottom: 8px;">
+            </div>
+
+            <div id="delete-acc-2fa-box" class="hidden" style="text-align: left; margin-bottom: 12px;">
+                <label style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; display: block;">
+                    Облачный пароль (2FA):
+                </label>
+                <input type="password" id="input-delete-acc-2fa" placeholder="Облачный 2FA пароль" style="margin-bottom: 8px;">
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn-secondary" style="border-radius: 12px; padding: 11px; flex: 1;" onclick="closeModal('delete-account-modal')">Отмена</button>
+                <button class="btn-danger" style="border-radius: 12px; padding: 11px; flex: 1; font-weight: 600;" onclick="executeDeleteAccount()">Удалить навсегда</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TELEGRAM-STYLE STORAGE & CACHE TRACKING MODAL -->
+    <div id="storage-modal" class="modal hidden">
+        <div class="modal-content animate-slide-up" style="max-width: 440px;">
+            <div class="modal-header">
+                <div>
+                    <h3 style="margin: 0; font-size: 19px; font-weight: 700;">Использование памяти</h3>
+                    <p style="margin: 3px 0 0 0; font-size: 13px; color: var(--text-muted);" id="storage-summary-label">Занято: рассчитывается...</p>
+                </div>
+                <button class="icon-btn close-btn" onclick="closeModal('storage-modal')">
+                    <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+
+            <!-- Segmented Storage Bar -->
+            <div style="margin: 15px 0 20px 0;">
+                <div class="storage-progress-bar">
+                    <div id="storage-bar-media" class="storage-progress-seg seg-media" style="width: 35%;"></div>
+                    <div id="storage-bar-voice" class="storage-progress-seg seg-voice" style="width: 25%;"></div>
+                    <div id="storage-bar-docs" class="storage-progress-seg seg-docs" style="width: 20%;"></div>
+                    <div id="storage-bar-db" class="storage-progress-seg seg-db" style="width: 20%;"></div>
+                </div>
+            </div>
+
+            <!-- Category Breakdown List -->
+            <div class="storage-categories-list">
+                <div class="storage-category-row">
+                    <div class="storage-category-left">
+                        <span class="storage-category-dot" style="background: #2aabee;"></span>
+                        <div>
+                            <div class="storage-category-name">Фотографии и медиа</div>
+                            <div class="storage-category-hint">Изображения из чатов и каналов</div>
+                        </div>
+                    </div>
+                    <span class="storage-category-size" id="storage-val-media">--</span>
+                </div>
+
+                <div class="storage-category-row">
+                    <div class="storage-category-left">
+                        <span class="storage-category-dot" style="background: #a259ff;"></span>
+                        <div>
+                            <div class="storage-category-name">Голосовые и аудио</div>
+                            <div class="storage-category-hint">Записи и голосовые сообщения</div>
+                        </div>
+                    </div>
+                    <span class="storage-category-size" id="storage-val-voice">--</span>
+                </div>
+
+                <div class="storage-category-row">
+                    <div class="storage-category-left">
+                        <span class="storage-category-dot" style="background: #34c759;"></span>
+                        <div>
+                            <div class="storage-category-name">Файлы и документы</div>
+                            <div class="storage-category-hint">Загруженные документы и вложения</div>
+                        </div>
+                    </div>
+                    <span class="storage-category-size" id="storage-val-docs">--</span>
+                </div>
+
+                <div class="storage-category-row">
+                    <div class="storage-category-left">
+                        <span class="storage-category-dot" style="background: #ff9500;"></span>
+                        <div>
+                            <div class="storage-category-name">База сообщений и кэш</div>
+                            <div class="storage-category-hint">Тексты переписок, черновики, аватары</div>
+                        </div>
+                    </div>
+                    <span class="storage-category-size" id="storage-val-db">--</span>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div style="margin-top: 22px; display: flex; flex-direction: column; gap: 10px;">
+                <button class="btn-danger" style="width: 100%; border-radius: 12px; padding: 12px; font-weight: 600; font-size: 14px;" onclick="clearAppCache()">
+                    Очистить весь кэш
+                </button>
+                <button class="btn-secondary" style="width: 100%; border-radius: 12px; padding: 11px; font-size: 14px;" onclick="closeModal('storage-modal')">
+                    Закрыть
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="qrcode.min.js"></script>
+    <script src="jsqr.min.js"></script>
+    <script src="knx-proto.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
